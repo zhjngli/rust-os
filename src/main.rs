@@ -10,6 +10,8 @@ use rust_os::println;
 use core::panic::PanicInfo;
 use bootloader::{BootInfo, entry_point};
 use alloc::{boxed::Box, vec, vec::Vec, rc::Rc};
+use rust_os::task::{Task, simple_executor::SimpleExecutor, keyboard};
+use rust_os::task::executor::Executor;
 
 entry_point!(kernel_main);
 
@@ -60,6 +62,11 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     #[cfg(test)]
     test_main();
 
+    let mut executor = Executor::new(); // new
+    executor.spawn(Task::new(example_task()));
+    executor.spawn(Task::new(keyboard::print_keypresses()));
+    executor.run();
+
     println!("It did not crash!");
     rust_os::hlt_loop();
 }
@@ -81,4 +88,13 @@ fn panic(info: &PanicInfo) -> ! {
 #[test_case]
 fn trivial_assertion() {
     assert_eq!(1, 1);
+}
+
+async fn async_number() -> u32 {
+    42
+}
+
+async fn example_task() {
+    let number = async_number().await;
+    println!("async number: {}", number);
 }
